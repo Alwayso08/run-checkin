@@ -12,8 +12,17 @@
 |---|---|
 | `h5/` | 打卡网页（前端 + Pages Functions 后端，托管在 Cloudflare Pages：https://run-checkin.pages.dev） |
 | `h5/functions/api/` | 后端 API（注册/登录/记录/照片，Cloudflare Pages Functions + D1） |
+| `android/` | 安卓 APK 工程（WebView 壳，GitHub Actions 自动构建） |
 | `miniprogram/` | 微信小程序（每日打卡提醒壳，基于云开发订阅消息） |
 | `docs/` | 设计文档与部署教程 |
+
+## 📱 安卓 App（APK）
+
+- **下载安装包**：[Releases 页面](https://github.com/Alwayso08/run-checkin/releases/latest) → `run-checkin-android-v2.2.0.apk`
+- **安装**：手机下载 → 点击安装 → 如提示"未知来源"选择允许 → 打开登录账号
+- **原理**：APK 是 WebView 壳，加载 https://run-checkin.pages.dev；网站更新自动生效，**APK 无需重装**
+- **构建**：`android/` 目录 + `.github/workflows/build-apk.yml`（GitHub Actions 自动出包）
+- **限制**：仅安卓；iOS 用户继续用网页版；debug 签名适合个人/朋友侧载安装
 
 ## 功能
 
