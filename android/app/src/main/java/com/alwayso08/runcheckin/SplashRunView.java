@@ -8,12 +8,14 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.View;
 
 /**
  * 启动页视图：微信风格地球背景 + 奔跑人物逐帧动画
- * 背景图 1080x2340（centerCrop 适配），人物精灵按图像坐标叠加
+ * - 人物边跑边向右缓慢移动（不是原地踏步）
+ * - 步频放慢（130ms/帧）
  */
 public class SplashRunView extends View {
 
@@ -25,7 +27,11 @@ public class SplashRunView extends View {
     private static final float SPRITE_Y = 1430f;
     private static final float SPRITE_W = 195f;
     private static final float SPRITE_H = 209f;
-    private static final long FRAME_MS = 85;
+
+    // 步频：130ms/帧（放慢）
+    private static final long FRAME_MS = 130;
+    // 水平移动速度：图像坐标下每秒 95px（慢跑速度，2.5 秒约移动 240px）
+    private static final float SPEED_PX_PER_SEC = 95f;
 
     private static final int[] FRAME_IDS = {
         R.drawable.run_0, R.drawable.run_1, R.drawable.run_2, R.drawable.run_3,
@@ -42,6 +48,7 @@ public class SplashRunView extends View {
     private Bitmap[] frames;
     private int frameIndex = 0;
     private boolean animating = false;
+    private long startTime = 0;
 
     public SplashRunView(Context context) {
         super(context);
@@ -82,6 +89,8 @@ public class SplashRunView extends View {
     public void startAnimation() {
         if (animating || frames == null || frames.length == 0) return;
         animating = true;
+        startTime = SystemClock.elapsedRealtime();
+        frameIndex = 0;
         handler.post(tick);
     }
 
@@ -113,12 +122,20 @@ public class SplashRunView extends View {
         bgDst.set(dx, dy, dx + BG_W * scale, dy + BG_H * scale);
         canvas.drawBitmap(bg, null, bgDst, paint);
 
+        // 水平移动距离（图像坐标系）
+        long elapsed = SystemClock.elapsedRealtime() - startTime;
+        float movePx = SPEED_PX_PER_SEC * (elapsed / 1000f);
+        // 不超出画面右侧
+        float maxMove = BG_W - SPRITE_X - SPRITE_W - 20f;
+        movePx = Math.min(movePx, Math.max(0f, maxMove));
+
         Bitmap frame = frames[frameIndex % frames.length];
         if (frame != null) {
+            float sx = SPRITE_X + movePx;
             spriteDst.set(
-                dx + SPRITE_X * scale,
+                dx + sx * scale,
                 dy + SPRITE_Y * scale,
-                dx + (SPRITE_X + SPRITE_W) * scale,
+                dx + (sx + SPRITE_W) * scale,
                 dy + (SPRITE_Y + SPRITE_H) * scale
             );
             canvas.drawBitmap(frame, null, spriteDst, paint);
