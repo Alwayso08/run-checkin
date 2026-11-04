@@ -27,6 +27,15 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        // 修复 kotlin-stdlib 与 kotlin-stdlib-jdk8 的重复类冲突
+        force("org.jetbrains.kotlin:kotlin-stdlib:1.9.24")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24")
+    }
+}
+
 dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
