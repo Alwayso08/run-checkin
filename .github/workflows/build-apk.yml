@@ -1,8 +1,11 @@
-# 自动构建安卓 APK（GitHub Actions 带 Android SDK，无需本地环境）
+# 自动构建安卓 APK 并发布 Release（GitHub Actions 自带 Android SDK）
 name: Build Android APK
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -26,9 +29,34 @@ jobs:
         working-directory: android
         run: gradle assembleDebug --no-daemon --stacktrace
 
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk run-checkin-android-v2.3.1.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: run-checkin-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: run-checkin-android-v2.3.1.apk
           retention-days: 30
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.3.1
+          name: 跑起来 v2.3.1 · 安卓 App（微信启动页奔跑版）
+          body: |
+            ## 🏃 跑起来 v2.3.1
+
+            启动页更新：**还原微信启动页风格 —— 站立人物改为奔跑剪影（同位置、同尺寸）**，地球、星空、地面完全保留。
+
+            ### 📥 安装
+            1. 下载 \`run-checkin-android-v2.3.1.apk\`
+            2. 点击安装 → 如提示"未知来源"选择允许
+            3. 打开「跑起来」→ 登录账号打卡
+
+            ### 说明
+            - 安卓专用（debug 签名，个人/朋友侧载）
+            - 网页版：https://run-checkin.pages.dev
+          files: run-checkin-android-v2.3.1.apk
+          draft: false
+          prerelease: false
