@@ -16,10 +16,12 @@
 | `miniprogram/` | 微信小程序（每日打卡提醒壳，基于云开发订阅消息） |
 | `docs/` | 设计文档与部署教程 |
 
-## 📱 安卓 App（APK）
+## 📱 安卓 App「跑起来」（APK）
 
-- **下载安装包**：[Releases 页面](https://github.com/Alwayso08/run-checkin/releases/latest) → `run-checkin-android-v2.2.0.apk`
-- **安装**：手机下载 → 点击安装 → 如提示"未知来源"选择允许 → 打开登录账号
+- **下载安装包**：[Releases 页面](https://github.com/Alwayso08/run-checkin/releases/latest) → `run-checkin-android-v2.3.0.apk`
+- **安装**：手机下载 → 点击安装 → 如提示"未知来源"选择允许 → 桌面出现「跑起来」→ 打开登录账号
+- **图标**：使用实拍跑步照片（圆角方形/圆形自适应）
+- **启动页**：微信启动页风格（深蓝星空 + 地平线光晕 + 沙丘剪影），人物为奔跑姿态
 - **原理**：APK 是 WebView 壳，加载 https://run-checkin.pages.dev；网站更新自动生效，**APK 无需重装**
 - **构建**：`android/` 目录 + `.github/workflows/build-apk.yml`（GitHub Actions 自动出包）
 - **限制**：仅安卓；iOS 用户继续用网页版；debug 签名适合个人/朋友侧载安装
