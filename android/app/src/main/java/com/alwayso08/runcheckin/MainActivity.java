@@ -12,9 +12,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
@@ -24,6 +28,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -42,9 +47,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "RunCheckin";
     private static final int REQ_FILE_CHOOSER = 1001;
     private static final int REQ_CAMERA_PERM = 200;
+    private static final long SPLASH_MIN_MS = 1200;
+    private static final long SPLASH_MAX_MS = 4500;
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
+    private ImageView splashView;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private long splashStart;
+    private boolean splashHidden = false;
     private ValueCallback<Uri[]> filePathCallback;
     private Uri cameraOutputUri;
 
@@ -55,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         webView = findViewById(R.id.webview);
         swipeRefresh = findViewById(R.id.refresh);
+        splashView = findViewById(R.id.splash);
+        splashStart = SystemClock.elapsedRealtime();
         swipeRefresh.setOnRefreshListener(() -> webView.reload());
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -86,6 +99,18 @@ public class MainActivity extends AppCompatActivity {
         webView.addJavascriptInterface(new JsBridge(), "AndroidApp");
 
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                long elapsed = SystemClock.elapsedRealtime() - splashStart;
+                long delay = Math.max(0, SPLASH_MIN_MS - elapsed);
+                handler.postDelayed(MainActivity.this::hideSplash, delay);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                hideSplash();
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return handleUrl(url);
@@ -122,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
                     req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                    req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "跑步打卡-" + System.currentTimeMillis());
+                    req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "跑起来-" + System.currentTimeMillis());
                     DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
                     if (dm != null) dm.enqueue(req);
                     Toast.makeText(MainActivity.this, "开始下载", Toast.LENGTH_SHORT).show();
@@ -144,11 +169,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // 兜底：页面加载异常时最多 4.5 秒隐藏启动页
+        handler.postDelayed(this::hideSplash, SPLASH_MAX_MS);
+
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
+            hideSplash();
         } else {
             webView.loadUrl(HOME_URL);
         }
+    }
+
+    private void hideSplash() {
+        if (splashHidden || splashView == null) return;
+        splashHidden = true;
+        splashView.animate()
+                .alpha(0f)
+                .setDuration(400)
+                .withEndAction(() -> splashView.setVisibility(View.GONE))
+                .start();
     }
 
     private boolean isOurDomain(String url) {
@@ -232,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
                     ContentValues cv = new ContentValues();
                     cv.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
                     cv.put(MediaStore.MediaColumns.MIME_TYPE, mime);
-                    cv.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/跑步打卡");
+                    cv.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/跑起来");
                     Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
                     if (uri != null) {
                         OutputStream os = getContentResolver().openOutputStream(uri);
@@ -244,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                 }
-                File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "跑步打卡");
+                File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "跑起来");
                 if (!dir.exists()) dir.mkdirs();
                 File f = new File(dir, name);
                 FileOutputStream fos = new FileOutputStream(f);
@@ -259,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void notifySaved() {
-            runOnUiThread(() -> Toast.makeText(MainActivity.this, "已保存到「下载/跑步打卡」目录", Toast.LENGTH_LONG).show());
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "已保存到「下载/跑起来」目录", Toast.LENGTH_LONG).show());
         }
     }
 }
