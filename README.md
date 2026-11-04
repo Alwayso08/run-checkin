@@ -2,6 +2,8 @@
 
 个人跑步打卡系统：**每日跑步打卡 + 体重记录 + 面容照片变化追踪**，微信内使用。
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
 ## 项目组成
 
 | 目录 | 说明 |
@@ -44,8 +46,52 @@
 |---|---|---|
 | ![](docs/screenshots/shot-7-me.png) | ![](docs/screenshots/shot-10-rest.png) | ![](docs/screenshots/shot-0-fresh.png) |
 
-## 文档
+## 更新网站（自动化）
 
-- [设计方案](docs/跑步打卡H5设计方案.md)
-- [部署到微信手把手教程](docs/部署到微信·手把手教程.md)
-- [小程序部署指南](docs/小程序部署指南.md)
+网站托管在 Cloudflare Pages：**https://run-checkin.pages.dev**。更新代码后重新部署即可，四种方式任选：
+
+### 方式一：AI 助手一键更新（推荐，零操作）
+
+把改动需求告诉助手，它会自动：改代码 → 本地测试 → 一键部署上线，全程无需你动手。
+
+### 方式二：GitHub Actions 自动部署（推送到 main 即上线）
+
+工作流模板见 [`docs/github-actions-deploy.yml`](docs/github-actions-deploy.yml)：监控 `h5/` 目录的推送，**自动部署到 Cloudflare Pages**。
+
+启用方法（只需做一次）：
+
+1. 在 Cloudflare 后台创建 API 令牌（权限：Account → Cloudflare Pages → Edit）
+2. 仓库 **Settings → Secrets and variables → Actions → New repository secret**，添加两个：
+   - `CLOUDFLARE_API_TOKEN`：粘贴你的令牌
+   - `CLOUDFLARE_ACCOUNT_ID`：`8fb2505919addeb513ecea70b093beca`
+3. 把 `docs/github-actions-deploy.yml` 的内容复制到仓库 **`.github/workflows/deploy.yml`**（GitHub 网页：Add file → Create new file → 文件名填 `.github/workflows/deploy.yml` → 粘贴保存）
+4. 之后任何对 `h5/` 的推送（网页编辑或本地提交）都会自动上线，无需本地环境
+
+> 注：写 `.github/workflows/` 需要令牌带 `workflow` 权限；用 GitHub 网页操作则不受此限制。
+
+### 方式三：本地命令部署
+
+```powershell
+npm install -g wrangler        # 仅首次
+$env:CLOUDFLARE_API_TOKEN = '<你的 Cloudflare 令牌>'
+wrangler pages deploy h5 --project-name=run-checkin
+```
+
+### 方式四：Cloudflare 网页上传
+
+Cloudflare 后台 → **Workers 和 Pages** → run-checkin → **创建新部署 → 直接上传** → 拖入 `h5/` 目录里的文件 → 部署。
+
+> 💡 更新代码**不会影响**手机里的打卡数据（数据存在手机浏览器，与网址绑定）。
+
+## License
+
+本项目采用 **GNU General Public License v3.0（GPL-3.0）** 开源，完整条款见 [LICENSE](LICENSE)。
+
+| | 说明 |
+|---|---|
+| ✅ 允许 | 自由使用、修改、分发（个人或商业用途均可） |
+| ✅ 要求 | 分发修改版时必须同样以 GPL-3.0 开源，并提供完整源代码 |
+| ❌ 禁止 | **将本代码用于闭源商业项目**：分发基于本项目的衍生作品必须公开全部源码 |
+| ⚠️ 例外 | 如需闭源商业使用，须获得作者单独授权（双许可），请通过 Issue 联系 |
+
+> 简单说：**可以拿去用、可以改、可以卖，但不能偷偷闭源。** 闭源商用请先联系作者授权。
