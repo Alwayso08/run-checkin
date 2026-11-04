@@ -15,12 +15,8 @@
             android:layout_height="match_parent" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <ImageView
+    <com.alwayso08.runcheckin.SplashRunView
         android:id="@+id/splash"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#0a0f0d"
-        android:contentDescription="启动画面"
-        android:scaleType="centerCrop"
-        android:src="@drawable/splash" />
+        android:layout_height="match_parent" />
 </FrameLayout>

@@ -30,33 +30,38 @@ jobs:
         run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk run-checkin-android-v2.3.1.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk run-checkin-android-v2.3.2.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: run-checkin-apk
-          path: run-checkin-android-v2.3.1.apk
+          path: run-checkin-android-v2.3.2.apk
           retention-days: 30
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.3.1
-          name: 跑起来 v2.3.1 · 安卓 App（微信启动页奔跑版）
+          tag_name: v2.3.2
+          name: 跑起来 v2.3.2 · 安卓 App（动态启动页）
           body: |
-            ## 🏃 跑起来 v2.3.1
+            ## 🏃 跑起来 v2.3.2
 
-            启动页更新：**还原微信启动页风格 —— 站立人物改为奔跑剪影（同位置、同尺寸）**，地球、星空、地面完全保留。
+            **动态启动页**：启动页的人物真的跑起来了！12 帧逐帧动画循环播放，停留时间改为 **2.5 秒**。
+
+            ### 🆕 本次更新
+            - 启动页人物改为 12 帧跑步动画（约 0.85 秒一个循环）
+            - 启动页停留时间 1.2 秒 → **2.5 秒**
+            - 背景、地球、星空完全保留微信原图风格
 
             ### 📥 安装
-            1. 下载 \`run-checkin-android-v2.3.1.apk\`
+            1. 下载 \`run-checkin-android-v2.3.2.apk\`
             2. 点击安装 → 如提示"未知来源"选择允许
             3. 打开「跑起来」→ 登录账号打卡
 
             ### 说明
             - 安卓专用（debug 签名，个人/朋友侧载）
             - 网页版：https://run-checkin.pages.dev
-          files: run-checkin-android-v2.3.1.apk
+          files: run-checkin-android-v2.3.2.apk
           draft: false
           prerelease: false

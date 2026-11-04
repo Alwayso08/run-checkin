@@ -47,12 +47,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "RunCheckin";
     private static final int REQ_FILE_CHOOSER = 1001;
     private static final int REQ_CAMERA_PERM = 200;
-    private static final long SPLASH_MIN_MS = 1200;
-    private static final long SPLASH_MAX_MS = 4500;
+    private static final long SPLASH_MIN_MS = 2500;
+    private static final long SPLASH_MAX_MS = 5500;
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
-    private ImageView splashView;
+    private SplashRunView splashView;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long splashStart;
     private boolean splashHidden = false;
@@ -183,9 +183,10 @@ public class MainActivity extends AppCompatActivity {
     private void hideSplash() {
         if (splashHidden || splashView == null) return;
         splashHidden = true;
+        splashView.stopAnimation();
         splashView.animate()
                 .alpha(0f)
-                .setDuration(400)
+                .setDuration(450)
                 .withEndAction(() -> splashView.setVisibility(View.GONE))
                 .start();
     }
