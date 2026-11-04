@@ -18,10 +18,10 @@
 
 ## 📱 安卓 App「跑起来」（APK）
 
-- **下载安装包**：[Releases 页面](https://github.com/Alwayso08/run-checkin/releases/latest) → `run-checkin-android-v2.3.1.apk`
+- **下载安装包**：[Releases 页面](https://github.com/Alwayso08/run-checkin/releases/latest) → `run-checkin-android-v2.3.2.apk`
 - **安装**：手机下载 → 点击安装 → 如提示"未知来源"选择允许 → 桌面出现「跑起来」→ 打开登录账号
 - **图标**：使用实拍跑步照片（圆角方形/圆形自适应）
-- **启动页**：还原微信启动页（地球 + 星空 + 地平线），站立人物替换为**同尺寸奔跑剪影**
+- **启动页**：还原微信启动页（地球 + 星空 + 地平线），人物替换为**同尺寸奔跑动画**（12 帧循环），停留 2.5 秒
 - **原理**：APK 是 WebView 壳，加载 https://run-checkin.pages.dev；网站更新自动生效，**APK 无需重装**
 - **构建**：`android/` 目录 + `.github/workflows/build-apk.yml`（GitHub Actions 自动出包）
 - **限制**：仅安卓；iOS 用户继续用网页版；debug 签名适合个人/朋友侧载安装
