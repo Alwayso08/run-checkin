@@ -715,6 +715,30 @@ function copyText(t) {
   } else fallbackCopy(t);
 }
 
+/* ========== 文件保存（网页下载 / Android App 桥接） ========== */
+function saveBlob(blob, filename) {
+  if (window.AndroidApp && window.AndroidApp.saveBase64File) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var b64 = String(reader.result).split(',')[1] || '';
+        window.AndroidApp.saveBase64File(filename, b64);
+        toast('✅ 已保存到手机「下载/跑步打卡」目录');
+      } catch (e) { toast('保存失败：' + e.message); }
+    };
+    reader.onerror = function () { toast('文件读取失败'); };
+    reader.readAsDataURL(blob);
+    return;
+  }
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+}
+
 /* ========== 备份导出 / 导入 / 清理 ========== */
 async function exportBackup() {
   toast('正在打包…');
@@ -733,13 +757,7 @@ async function exportBackup() {
     if (b) folder.file(keys[i] + '.jpg', b);
   }
   var blob = await zip.generateAsync({ type: 'blob' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = '跑步打卡备份-' + todayKey() + '.zip';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 60000);
+  saveBlob(blob, '跑步打卡备份-' + todayKey() + '.zip');
   toast('✅ 已导出，请转发到「文件传输助手」留存');
 }
 
@@ -767,12 +785,7 @@ function exportCsv() {
     }).join(',');
   }).join('\r\n');
   var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '跑步打卡记录-' + todayKey() + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function () { document.body.removeChild(a); }, 1000);
+  saveBlob(blob, '跑步打卡记录-' + todayKey() + '.csv');
   toast('📊 表格已导出，可用 Excel 打开');
 }
 
