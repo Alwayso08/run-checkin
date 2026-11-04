@@ -1,0 +1,43 @@
+<view class="page">
+  <!-- 头部 -->
+  <view class="header">
+    <view class="title">🏃 跑步打卡</view>
+    <view class="sub">{{dateStr}} · {{weekDay}}</view>
+  </view>
+
+  <!-- 今日卡片 -->
+  <view class="hero-card">
+    <view class="hero-status">今天跑了吗？</view>
+    <view class="hero-sub">本周目标 {{weeklyGoal}} 天 · 打开打卡页记录今天的跑步</view>
+    <button class="btn-primary" bindtap="openCheckin">📱 打开打卡页</button>
+    <view class="hint">链接会复制到剪贴板，粘贴到微信聊天里点开即可打卡</view>
+  </view>
+
+  <!-- 提醒卡片 -->
+  <view class="card">
+    <view class="card-title">⏰ 每日提醒</view>
+    <view class="card-sub">订阅后，明天微信会给你发一条服务通知提醒打卡</view>
+    <button class="btn-sub" bindtap="subscribe">订阅明天的提醒</button>
+    <view class="hint">个人小程序每天需点一次订阅（微信限制），点一下就能收到明天的提醒</view>
+  </view>
+
+  <!-- 设置卡片 -->
+  <view class="card">
+    <view class="card-title">⚙️ 设置</view>
+    <view class="row">
+      <text class="row-label">每周目标天数</text>
+      <picker mode="selector" range="{{goalOptions}}" value="{{goalIndex}}" bindchange="changeGoal">
+        <view class="picker-val">{{weeklyGoal}} 天/周 ›</view>
+      </picker>
+    </view>
+    <view class="row">
+      <text class="row-label">提醒时间</text>
+      <picker mode="time" value="{{remindTime}}" bindchange="changeTime">
+        <view class="picker-val">{{remindTime}} ›</view>
+      </picker>
+    </view>
+    <view class="hint">提醒时间会随订阅一起保存</view>
+  </view>
+
+  <view class="footer">打卡数据保存在打卡网页里 · 小程序只做提醒和入口</view>
+</view>

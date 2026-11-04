@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "跑步打卡",
+    "navigationBarBackgroundColor": "#0a0f0d",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0a0f0d",
+    "backgroundTextStyle": "dark"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

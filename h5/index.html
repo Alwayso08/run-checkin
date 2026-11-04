@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0f0d">
+<title>跑步打卡</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ========== 今日页 ========== -->
+  <section class="page active" id="page-today">
+    <header class="page-head">
+      <div>
+        <h1>跑步打卡</h1>
+        <p class="sub" id="today-date">--</p>
+      </div>
+      <div class="streak-chip" id="streak-chip">
+        <span class="flame">🔥</span><b id="streak-num">0</b><span>天连击</span>
+      </div>
+    </header>
+
+    <!-- 今日状态 + 周进度环 -->
+    <div class="hero-card" id="hero-card">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 120 120" class="ring">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fg" cx="60" cy="60" r="52" id="ring-fg"/>
+        </svg>
+        <div class="ring-center">
+          <b id="ring-num">0/4</b>
+          <span>本周完成</span>
+        </div>
+      </div>
+      <div class="hero-info">
+        <div class="hero-status" id="hero-status">今天还没打卡</div>
+        <div class="hero-sub" id="hero-sub">本周还差 4 天达标</div>
+        <div class="hero-meta" id="hero-meta"></div>
+      </div>
+    </div>
+
+    <!-- 跑步卡 -->
+    <div class="card" id="run-card">
+      <div class="card-head">
+        <span class="card-icon">🏃</span>
+        <div class="card-title">
+          <b>跑步打卡</b>
+          <span id="run-sub">今天跑了吗？</span>
+        </div>
+        <button class="btn btn-ghost" id="btn-run-edit" style="display:none">编辑</button>
+      </div>
+      <div id="run-empty" class="card-body">
+        <button class="btn btn-primary btn-block" id="btn-run-checkin">今日打卡</button>
+        <button class="btn btn-ghost btn-block" id="btn-rest-day">🛌 今天请假 / 休息</button>
+      </div>
+      <div id="run-done" class="card-body done-grid" style="display:none">
+        <div><b id="run-distance">--</b><span>公里</span></div>
+        <div><b id="run-duration">--</b><span>分钟</span></div>
+        <div><b id="run-pace">--</b><span>配速</span></div>
+      </div>
+    </div>
+
+    <!-- 体重卡 -->
+    <div class="card" id="weight-card">
+      <div class="card-head">
+        <span class="card-icon">⚖️</span>
+        <div class="card-title">
+          <b>体重记录</b>
+          <span id="weight-sub">今天称了吗？</span>
+        </div>
+      </div>
+      <div class="card-body weight-row">
+        <div class="weight-input-wrap">
+          <input type="number" id="weight-input" inputmode="decimal" step="0.1" min="20" max="300" placeholder="如 65.5">
+          <span>kg</span>
+        </div>
+        <button class="btn btn-primary" id="btn-weight-save">记录</button>
+      </div>
+    </div>
+
+    <!-- 拍照卡 -->
+    <div class="card" id="photo-card">
+      <div class="card-head">
+        <span class="card-icon">📷</span>
+        <div class="card-title">
+          <b>每日正面照</b>
+          <span id="photo-sub">记录面容变化</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="photo-today" id="photo-today">
+          <div class="photo-placeholder" id="photo-placeholder">今天还没拍</div>
+          <img id="photo-today-img" style="display:none" alt="今日照片">
+        </div>
+        <div class="photo-actions">
+          <button class="btn btn-primary" id="btn-take-photo">📷 拍照</button>
+          <button class="btn btn-ghost" id="btn-retake-photo" style="display:none">重拍</button>
+        </div>
+        <p class="hint">拍摄时请将脸部对准屏幕中央参考框，保持每天角度一致</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 日历页 ========== -->
+  <section class="page" id="page-calendar">
+    <header class="page-head">
+      <div><h1>打卡日历</h1><p class="sub" id="cal-subtitle">--</p></div>
+    </header>
+    <div class="card cal-card">
+      <div class="cal-nav">
+        <button class="btn btn-ghost" id="cal-prev">‹</button>
+        <b id="cal-title">--</b>
+        <button class="btn btn-ghost" id="cal-next">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <span><i class="dot dot-run"></i>跑步</span>
+        <span><i class="dot dot-weight"></i>体重</span>
+        <span><i class="dot dot-photo"></i>照片</span>
+        <span><i class="dot dot-rest"></i>请假</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📊</span><div class="card-title"><b>本月小结</b><span id="cal-month-sum">--</span></div></div>
+    </div>
+  </section>
+
+  <!-- ========== 统计页 ========== -->
+  <section class="page" id="page-stats">
+    <header class="page-head"><div><h1>数据统计</h1><p class="sub">趋势一目了然</p></div></header>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-icon">⚖️</span>
+        <div class="card-title"><b>体重曲线</b><span id="weight-sum">--</span></div>
+        <div class="seg" id="weight-range">
+          <button data-r="30" class="on">30天</button>
+          <button data-r="90">90天</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="weight-chart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-icon">🏃</span>
+        <div class="card-title"><b>跑步数据</b><span id="run-sum">--</span></div>
+        <div class="seg" id="run-range">
+          <button data-r="week" class="on">近4周</button>
+          <button data-r="month">近6月</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="run-chart"></canvas></div>
+      <div class="stat-grid" id="run-stat-grid">
+        <div><b id="stat-total-km">--</b><span>总距离(km)</span></div>
+        <div><b id="stat-total-times">--</b><span>总次数</span></div>
+        <div><b id="stat-avg-pace">--</b><span>平均配速</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 照片页 ========== -->
+  <section class="page" id="page-photos">
+    <header class="page-head">
+      <div><h1>照片时间线</h1><p class="sub" id="photo-sum">--</p></div>
+      <button class="btn btn-primary" id="btn-compare">对比</button>
+    </header>
+    <div id="photo-timeline"></div>
+  </section>
+
+  <!-- ========== 我的页 ========== -->
+  <section class="page" id="page-me">
+    <header class="page-head"><div><h1>我的</h1><p class="sub">设置与数据管理</p></div></header>
+
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🎯</span><div class="card-title"><b>跑步目标</b><span>每周计划跑几天</span></div></div>
+      <div class="card-body setting-row">
+        <div class="stepper">
+          <button id="btn-goal-minus">−</button>
+          <b id="goal-value">4</b>
+          <button id="btn-goal-plus">＋</button>
+        </div>
+        <span>天 / 周</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-icon">⚖️</span><div class="card-title"><b>目标体重</b><span>用于体重曲线参考线（可不填）</span></div></div>
+      <div class="card-body setting-row">
+        <div class="weight-input-wrap">
+          <input type="number" id="target-weight-input" inputmode="decimal" step="0.1" min="20" max="300" placeholder="如 60">
+          <span>kg</span>
+        </div>
+        <button class="btn btn-ghost" id="btn-target-weight-save">保存</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-icon">⏰</span><div class="card-title"><b>打卡提醒</b><span>阶段一：微信自带提醒（免费零门槛）</span></div></div>
+      <div class="card-body">
+        <div class="setting-row">
+          <input type="time" id="remind-time" value="20:30" class="time-input">
+          <button class="btn btn-primary" id="btn-gen-reminder">生成提醒消息</button>
+        </div>
+        <p class="hint" id="remind-hint">生成后发给「文件传输助手」→ 长按消息 → 提醒 → 每天重复，微信会每天定时提醒你打卡。小程序注册好后可升级为订阅消息推送。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-icon">💾</span><div class="card-title"><b>数据备份</b><span>强烈建议每周备份一次</span></div></div>
+      <div class="card-body">
+        <div class="backup-actions">
+          <button class="btn btn-primary" id="btn-export">导出备份 (zip)</button>
+          <button class="btn btn-ghost" id="btn-import">导入备份</button>
+        </div>
+        <button class="btn btn-ghost btn-block" id="btn-export-csv">📊 导出记录表格 (Excel/CSV)</button>
+        <input type="file" id="import-file" accept=".zip,application/zip" style="display:none">
+        <p class="hint">备份包含全部打卡数据和照片。导出后请转发到「文件传输助手」留存，换手机或清缓存后可导入恢复。</p>
+      </div>
+    </div>
+
+    <div class="card danger-card">
+      <div class="card-head"><span class="card-icon">🗑️</span><div class="card-title"><b>清理数据</b><span>请先备份！</span></div></div>
+      <div class="card-body backup-actions">
+        <button class="btn btn-danger" id="btn-clear-old-photos">清理 30 天前的照片</button>
+        <button class="btn btn-danger" id="btn-clear-all">清空全部数据</button>
+      </div>
+    </div>
+
+    <p class="about">跑步打卡 v1.0 · 数据仅存本机 · 请定期备份</p>
+  </section>
+
+  <!-- ========== 底部导航 ========== -->
+  <nav class="tabbar">
+    <button class="tab on" data-tab="today"><span class="tab-ico">🏠</span>今日</button>
+    <button class="tab" data-tab="calendar"><span class="tab-ico">📅</span>日历</button>
+    <button class="tab" data-tab="stats"><span class="tab-ico">📈</span>统计</button>
+    <button class="tab" data-tab="photos"><span class="tab-ico">📷</span>照片</button>
+    <button class="tab" data-tab="me"><span class="tab-ico">⚙️</span>我的</button>
+  </nav>
+</div>
+
+<!-- ========== 跑步打卡弹窗 ========== -->
+<div class="modal-mask" id="modal-run">
+  <div class="modal">
+    <div class="modal-head">
+      <b>跑步打卡</b>
+      <button class="modal-close" data-close="modal-run">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field">
+        <span>距离 (公里)</span>
+        <input type="number" id="run-distance-input" inputmode="decimal" step="0.01" min="0" placeholder="如 5">
+      </label>
+      <label class="field">
+        <span>时长 (分钟)</span>
+        <input type="number" id="run-duration-input" inputmode="decimal" step="0.1" min="0" placeholder="如 32">
+      </label>
+      <label class="field">
+        <span>配速 (分钟/公里)</span>
+        <input type="number" id="run-pace-input" inputmode="decimal" step="0.01" min="0" placeholder="自动计算">
+      </label>
+      <label class="field">
+        <span>备注（可选）</span>
+        <input type="text" id="run-note-input" placeholder="如：夜跑轻松完成">
+      </label>
+      <p class="hint">输入任意两项，第三项自动计算</p>
+      <button class="btn btn-primary btn-block" id="btn-run-save">保存打卡</button>
+      <button class="btn btn-danger btn-block" id="btn-run-delete" style="display:none">撤销今日打卡</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 拍照确认弹窗 ========== -->
+<div class="modal-mask" id="modal-photo">
+  <div class="modal">
+    <div class="modal-head">
+      <b>确认今日照片</b>
+      <button class="modal-close" data-close="modal-photo">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="photo-preview-wrap">
+        <img id="photo-preview-img" alt="预览">
+        <div class="face-guide"><span>将脸对准此区域</span></div>
+      </div>
+      <div class="photo-confirm-actions">
+        <button class="btn btn-ghost" id="btn-photo-retake">重拍</button>
+        <button class="btn btn-primary" id="btn-photo-save">使用这张</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 大图查看弹窗 ========== -->
+<div class="modal-mask" id="modal-viewer">
+  <div class="modal viewer">
+    <div class="viewer-head">
+      <span id="viewer-date">--</span>
+      <button class="modal-close" data-close="modal-viewer">✕</button>
+    </div>
+    <img id="viewer-img" alt="照片">
+    <div class="viewer-actions">
+      <button class="btn btn-ghost" id="btn-viewer-prev">‹ 上一张</button>
+      <button class="btn btn-ghost" id="btn-viewer-next">下一张 ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 对比弹窗 ========== -->
+<div class="modal-mask" id="modal-compare">
+  <div class="modal">
+    <div class="modal-head">
+      <b>照片对比</b>
+      <button class="modal-close" data-close="modal-compare">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint" id="compare-hint">先选第一张（较早的照片）</p>
+      <div class="compare-pick" id="compare-pick"></div>
+      <div class="compare-stage" id="compare-stage" style="display:none">
+        <div class="compare-slider" id="compare-slider">
+          <img id="compare-img-a" alt="左">
+          <img id="compare-img-b" alt="右">
+          <div class="compare-divider" id="compare-divider"><span>⇔</span></div>
+        </div>
+        <div class="compare-labels">
+          <span id="compare-label-a">--</span>
+          <span id="compare-label-b">--</span>
+        </div>
+        <button class="btn btn-ghost btn-block" id="btn-compare-reset">重新选择</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="camera-input" accept="image/*" capture="user" style="display:none">
+<div class="toast" id="toast"></div>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

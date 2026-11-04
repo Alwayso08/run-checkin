@@ -1,0 +1,9 @@
+{
+  "triggers": [
+    {
+      "name": "minutelyReminder",
+      "type": "timer",
+      "config": "0 * * * * * *"
+    }
+  ]
+}
