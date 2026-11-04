@@ -30,6 +30,20 @@
 
 打卡数据保存在使用者的手机本地（微信内置浏览器存储），不上传任何服务器。请定期使用「我的 → 导出备份」备份到文件传输助手。
 
+## 界面预览
+
+| 今日页 | 打卡弹窗 | 日历 |
+|---|---|---|
+| ![](docs/screenshots/shot-1-today.png) | ![](docs/screenshots/shot-2-run-modal.png) | ![](docs/screenshots/shot-3-calendar.png) |
+
+| 统计 | 照片时间线 | 双图对比 |
+|---|---|---|
+| ![](docs/screenshots/shot-4-stats.png) | ![](docs/screenshots/shot-5-photos.png) | ![](docs/screenshots/shot-6-compare.png) |
+
+| 我的 | 请假休息 | 首次打开 |
+|---|---|---|
+| ![](docs/screenshots/shot-7-me.png) | ![](docs/screenshots/shot-10-rest.png) | ![](docs/screenshots/shot-0-fresh.png) |
+
 ## 文档
 
 - [设计方案](docs/跑步打卡H5设计方案.md)
