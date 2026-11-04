@@ -54,20 +54,15 @@
 
 把改动需求告诉助手，它会自动：改代码 → 本地测试 → 一键部署上线，全程无需你动手。
 
-### 方式二：GitHub Actions 自动部署（推送到 main 即上线）
+### 方式二：GitHub Actions 自动部署（已启用 ✅）
 
-工作流模板见 [`docs/github-actions-deploy.yml`](docs/github-actions-deploy.yml)：监控 `h5/` 目录的推送，**自动部署到 Cloudflare Pages**。
+工作流 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) 已内置并**验证可用**：任何推送到 main 且涉及 `h5/` 目录的提交，都会自动部署到 Cloudflare Pages。
 
-启用方法（只需做一次）：
+- 所需的两个 Secrets（`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）已配置在仓库 Actions Secrets 中
+- 也可以在 **Actions → Deploy H5 to Cloudflare Pages → Run workflow** 手动触发
+- 修改 h5/ 文件并提交后，约 1 分钟自动上线
 
-1. 在 Cloudflare 后台创建 API 令牌（权限：Account → Cloudflare Pages → Edit）
-2. 仓库 **Settings → Secrets and variables → Actions → New repository secret**，添加两个：
-   - `CLOUDFLARE_API_TOKEN`：粘贴你的令牌
-   - `CLOUDFLARE_ACCOUNT_ID`：`8fb2505919addeb513ecea70b093beca`
-3. 把 `docs/github-actions-deploy.yml` 的内容复制到仓库 **`.github/workflows/deploy.yml`**（GitHub 网页：Add file → Create new file → 文件名填 `.github/workflows/deploy.yml` → 粘贴保存）
-4. 之后任何对 `h5/` 的推送（网页编辑或本地提交）都会自动上线，无需本地环境
-
-> 注：写 `.github/workflows/` 需要令牌带 `workflow` 权限；用 GitHub 网页操作则不受此限制。
+> 提示：如果更换了 Cloudflare 令牌，记得到 Settings → Secrets 更新 `CLOUDFLARE_API_TOKEN`。
 
 ### 方式三：本地命令部署
 
