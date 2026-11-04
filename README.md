@@ -4,7 +4,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-> 🆕 **v1.2 多用户版**：每人注册自己的账号，数据云端保存、互相不可见。详情见 [多用户架构说明](docs/多用户架构说明.md)。
+> 🆕 **v2.1.0 多用户版**：每人注册自己的账号，数据云端保存、互相不可见。详情见 [多用户架构说明](docs/多用户架构说明.md)，安装包见 [Releases](https://github.com/Alwayso08/run-checkin/releases/latest)。
 
 ## 项目组成
 
