@@ -179,6 +179,15 @@
     <header class="page-head"><div><h1>我的</h1><p class="sub">设置与数据管理</p></div></header>
 
     <div class="card">
+      <div class="card-head"><span class="card-icon">👤</span><div class="card-title"><b>我的账号</b><span id="me-user">未登录</span></div></div>
+      <div class="card-body backup-actions">
+        <button class="btn btn-ghost" id="btn-logout" style="display:none">退出登录</button>
+        <button class="btn btn-ghost" id="btn-import-local" style="display:none">导入本机旧数据</button>
+      </div>
+      <p class="hint">数据已保存在云端 · 仅你自己可见 · 换手机登录同一账号即可恢复</p>
+    </div>
+
+    <div class="card">
       <div class="card-head"><span class="card-icon">🎯</span><div class="card-title"><b>跑步目标</b><span>每周计划跑几天</span></div></div>
       <div class="card-body setting-row">
         <div class="stepper">
@@ -339,6 +348,25 @@
 </div>
 
 <input type="file" id="camera-input" accept="image/*" capture="user" style="display:none">
+
+<!-- ========== 登录 / 注册 ========== -->
+<div class="auth-mask" id="auth-mask">
+  <div class="auth-card">
+    <div class="auth-logo">🏃</div>
+    <div class="auth-title">跑步打卡</div>
+    <div class="auth-sub">登录后每天打卡 · 数据云端保存 · 仅自己可见</div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" data-mode="login">登录</button>
+      <button class="auth-tab" data-mode="register">注册</button>
+    </div>
+    <input class="auth-input" id="auth-username" placeholder="用户名（2~20位，可用中文）" maxlength="20" autocomplete="username">
+    <input class="auth-input" id="auth-password" type="password" placeholder="密码（至少6位）" maxlength="64" autocomplete="current-password">
+    <div class="auth-msg" id="auth-msg"></div>
+    <button class="btn btn-primary btn-block" id="auth-submit">登录</button>
+    <p class="auth-hint">请记住用户名和密码，忘记密码暂不支持找回</p>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="vendor/chart.umd.min.js"></script>

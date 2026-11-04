@@ -35,6 +35,9 @@ var STORE_KEY = 'rc_state_v1';
 var state = null;
 var photoKeys = new Set();
 var urlCache = {};
+var currentUser = null;   // 当前登录用户
+var serverMode = false;   // 是否已连接云端（登录成功）
+var syncTimer = null;     // 云端同步防抖定时器
 
 function defaultState() {
   return { settings: { weeklyGoal: 4, targetWeight: null, remindTime: '20:30' }, records: {} };
@@ -48,7 +51,24 @@ function load() {
   if (!state.records) state.records = {};
   if (!state.settings.weeklyGoal) state.settings.weeklyGoal = 4;
 }
-function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function save() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  if (serverMode) { scheduleSync(); }
+  else if (currentUser) { localStorage.setItem('rc_dirty', '1'); }
+}
+function scheduleSync() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(function () {
+    var payload = JSON.stringify({ settings: state.settings, records: state.records });
+    fetch('/api/data', {
+      method: 'PUT', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: payload
+    }).then(function (r) {
+      if (!r.ok) throw new Error('sync ' + r.status);
+      localStorage.removeItem('rc_dirty');
+    }).catch(function () { localStorage.setItem('rc_dirty', '1'); });
+  }, 800);
+}
 function rec(k) {
   if (!k) k = todayKey();
   if (!state.records[k]) state.records[k] = {};
@@ -113,11 +133,26 @@ var idb = {
 async function refreshPhotoKeys() { photoKeys = new Set(await idb.keys()); }
 async function getPhotoUrl(k) {
   if (urlCache[k]) return urlCache[k];
-  var b = await idb.get(k);
+  var b = await getPhotoBlob(k);
   if (!b) return null;
   var u = URL.createObjectURL(b);
   urlCache[k] = u;
   return u;
+}
+async function getPhotoBlob(k) {
+  var b = await idb.get(k);
+  if (b) return b;
+  if (serverMode) {
+    try {
+      var res = await fetch('/api/photo?date=' + k, { credentials: 'same-origin' });
+      if (res.ok) {
+        b = await res.blob();
+        await idb.put(k, b);
+        photoKeys.add(k);
+      }
+    } catch (e) { /* 离线 */ }
+  }
+  return b || null;
 }
 
 /* ========== Toast / 弹窗 ========== */
@@ -210,7 +245,7 @@ function renderToday() {
     sub.textContent = '本周 ' + wp.done + '/' + wp.effectiveGoal + ' 完成 · 还差 ' + (wp.effectiveGoal - wp.done) + ' 天达标' + (wp.rest > 0 ? '（已请假 ' + wp.rest + ' 天）' : '');
   }
   var hasWeight = today && today.weight;
-  var hasPhoto = today && today.photoId && photoKeys.has(today.photoId);
+  var hasPhoto = today && today.photoId;
   meta.innerHTML =
     '<span class="chip ' + (hasWeight ? 'green' : '') + '">⚖️ 体重 ' + (hasWeight ? today.weight + ' kg' : '未记') + '</span>' +
     '<span class="chip ' + (hasPhoto ? 'green' : '') + '">📷 照片 ' + (hasPhoto ? '已拍' : '未拍') + '</span>' +
@@ -350,7 +385,7 @@ function calCell(key, day) {
     if (r.run && r.run.distance > 0) { div.classList.add('ran'); marks += '<i class="dot-run"></i>'; }
     if (r.rest) { div.classList.add('rest'); marks += '<i class="dot-rest"></i>'; }
     if (r.weight) marks += '<i class="dot-weight"></i>';
-    if (r.photoId && photoKeys.has(r.photoId)) marks += '<i class="dot-photo"></i>';
+    if (r.photoId) marks += '<i class="dot-photo"></i>';
   }
   div.innerHTML = day + (marks ? '<span class="marks">' + marks + '</span>' : '');
   return div;
@@ -497,7 +532,7 @@ function getPhotoDates(desc) {
   var all = [];
   Object.keys(state.records).forEach(function (k) {
     var r = state.records[k];
-    if (r.photoId && photoKeys.has(r.photoId)) all.push(k);
+    if (r.photoId) all.push(k);
   });
   all.sort();
   if (desc) all.reverse();
@@ -686,9 +721,15 @@ async function exportBackup() {
   var zip = new JSZip();
   zip.file('data.json', JSON.stringify(state, null, 2));
   var folder = zip.folder('photos');
-  var keys = await idb.keys();
+  var keySet = {};
+  Object.keys(state.records).forEach(function (k) {
+    var r = state.records[k];
+    if (r.photoId) keySet[r.photoId] = true;
+  });
+  (await idb.keys()).forEach(function (k) { keySet[k] = true; });
+  var keys = Object.keys(keySet);
   for (var i = 0; i < keys.length; i++) {
-    var b = await idb.get(keys[i]);
+    var b = await getPhotoBlob(keys[i]);
     if (b) folder.file(keys[i] + '.jpg', b);
   }
   var blob = await zip.generateAsync({ type: 'blob' });
@@ -742,11 +783,183 @@ function renderMe() {
   $('#remind-time').value = state.settings.remindTime || '20:30';
 }
 
+/* ========== 登录 / 账号 ========== */
+var authMode = 'login';
+
+function showAuth() { $('#auth-mask').classList.add('open'); }
+function hideAuth() { $('#auth-mask').classList.remove('open'); }
+
+function bindAuthUI() {
+  $$('.auth-tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      authMode = b.dataset.mode;
+      $$('.auth-tab').forEach(function (x) { x.classList.toggle('on', x === b); });
+      $('#auth-submit').textContent = authMode === 'login' ? '登录' : '注册';
+      $('#auth-msg').textContent = '';
+    });
+  });
+  $('#auth-submit').addEventListener('click', doAuth);
+  $('#auth-password').addEventListener('keydown', function (e) { if (e.key === 'Enter') doAuth(); });
+  $('#btn-logout').addEventListener('click', async function () {
+    try { await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    try { await resetPhotoCache(); } catch (e) {}
+    localStorage.removeItem('rc_last_user');
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+  });
+  $('#btn-import-local').addEventListener('click', function () {
+    var raw = localStorage.getItem('rc_local_backup');
+    if (!raw) { toast('没有找到本机旧数据'); return; }
+    try {
+      var old = JSON.parse(raw);
+      if (!confirm('将把本机 ' + Object.keys(old.records || {}).length + ' 天的旧记录导入到云端账号（合并覆盖同日期），确定？')) return;
+      state = old;
+      save();
+      importLocalData();
+    } catch (e) { toast('本机数据读取失败'); }
+  });
+}
+
+function updateUserUI() {
+  var el = $('#me-user');
+  if (el) el.textContent = currentUser ? currentUser.username : '未登录';
+  var lo = $('#btn-logout');
+  if (lo) lo.style.display = currentUser ? '' : 'none';
+  var imp = $('#btn-import-local');
+  if (imp) imp.style.display = (currentUser && localStorage.getItem('rc_local_backup')) ? '' : 'none';
+}
+
+async function doAuth() {
+  var username = $('#auth-username').value.trim();
+  var password = $('#auth-password').value;
+  var msg = $('#auth-msg');
+  msg.textContent = '';
+  if (!username || !password) { msg.textContent = '请输入用户名和密码'; return; }
+  var path = authMode === 'login' ? '/api/login' : '/api/register';
+  $('#auth-submit').disabled = true;
+  try {
+    var res = await fetch(path, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, password: password })
+    });
+    var j = await res.json().catch(function () { return {}; });
+    if (!res.ok) { msg.textContent = j.error || ('请求失败 ' + res.status); return; }
+    currentUser = j.user;
+    serverMode = true;
+    localStorage.setItem('rc_last_user', currentUser.username);
+    hideAuth();
+    await resetPhotoCache();
+    var dres = await fetch('/api/data', { credentials: 'same-origin' });
+    var data = await dres.json();
+    await applyServerData(data);
+    updateUserUI();
+    renderToday(); renderCalendar(); renderStats(); renderPhotos(); renderMe();
+    toast(authMode === 'login' ? '✅ 欢迎回来，' + currentUser.username : '✅ 注册成功，开始打卡吧！');
+  } catch (e) {
+    msg.textContent = '网络错误，请稍后重试';
+  } finally {
+    $('#auth-submit').disabled = false;
+  }
+}
+
+async function initAuth() {
+  try {
+    var me = await fetch('/api/me', { credentials: 'same-origin' });
+    if (me.ok) {
+      var j = await me.json();
+      currentUser = j.user;
+      serverMode = true;
+      localStorage.setItem('rc_last_user', currentUser.username);
+      await resetPhotoCache();
+      var dres = await fetch('/api/data', { credentials: 'same-origin' });
+      var data = await dres.json();
+      if (localStorage.getItem('rc_dirty') === '1') {
+        // 离线期间的修改：先上传本机数据
+        await importLocalData();
+      } else {
+        await applyServerData(data);
+      }
+      updateUserUI();
+      renderToday();
+      return;
+    }
+  } catch (e) {
+    // 网络异常：若之前登录过，用本机缓存离线使用
+    var lastUser = localStorage.getItem('rc_last_user');
+    if (lastUser) {
+      currentUser = { username: lastUser };
+      serverMode = false;
+      updateUserUI();
+      toast('📡 离线模式：网络恢复后自动同步');
+      renderToday();
+      return;
+    }
+  }
+  // 未登录
+  showAuth();
+  updateUserUI();
+  renderToday();
+}
+
+async function applyServerData(data) {
+  var serverRecords = (data && data.records) || {};
+  var serverSettings = (data && data.settings) || null;
+  var localCount = Object.keys(state.records).length;
+  if (Object.keys(serverRecords).length === 0 && localCount > 0) {
+    // 备份本机数据，询问是否导入
+    localStorage.setItem('rc_local_backup', JSON.stringify(state));
+    var doImport = confirm('检测到本机有 ' + localCount + ' 天记录，要导入到账号「' + currentUser.username + '」吗？\n（点取消则从空账号开始，本机数据会保留在备份里）');
+    if (doImport) {
+      await importLocalData();
+      return;
+    }
+  }
+  state.records = serverRecords;
+  state.settings = serverSettings || state.settings;
+  if (!state.settings.weeklyGoal) state.settings.weeklyGoal = 4;
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+async function resetPhotoCache() {
+  try { await idb.clear(); } catch (e) {}
+  photoKeys = new Set();
+  urlCache = {};
+}
+
+async function importLocalData() {
+  var payload = JSON.stringify({ settings: state.settings, records: state.records });
+  var r = await fetch('/api/data', {
+    method: 'PUT', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' }, body: payload
+  });
+  if (!r.ok) { toast('导入失败：' + r.status); return; }
+  var count = 0;
+  var keys = await idb.keys();
+  for (var i = 0; i < keys.length; i++) {
+    var blob = await idb.get(keys[i]);
+    if (!blob) continue;
+    try {
+      await fetch('/api/photo?date=' + keys[i], {
+        method: 'PUT', credentials: 'same-origin',
+        headers: { 'Content-Type': 'image/jpeg' }, body: blob
+      });
+      count++;
+    } catch (e) { /* 忽略单张失败 */ }
+  }
+  localStorage.removeItem('rc_dirty');
+  localStorage.removeItem('rc_local_backup');
+  updateUserUI();
+  toast('✅ 已导入 ' + Object.keys(state.records).length + ' 天记录、' + count + ' 张照片');
+  renderToday(); renderCalendar(); renderStats(); renderPhotos(); renderMe();
+}
+
 /* ========== 初始化 ========== */
 async function init() {
   try { await idb.open(); } catch (e) { console.warn('IndexedDB 不可用', e); }
   load();
   await refreshPhotoKeys();
+  bindAuthUI();
 
   // 导航与弹窗
   $$('.tab').forEach(function (t) { t.addEventListener('click', function () { switchTab(t.dataset.tab); }); });
@@ -829,6 +1042,12 @@ async function init() {
       rec().photoId = todayKey();
       save();
       photoKeys.add(todayKey());
+      if (serverMode) {
+        fetch('/api/photo?date=' + todayKey(), {
+          method: 'PUT', credentials: 'same-origin',
+          headers: { 'Content-Type': 'image/jpeg' }, body: blob
+        }).catch(function () {});
+      }
       closeModal('modal-photo');
       toast('📷 今日照片已保存');
       renderToday();
@@ -932,6 +1151,20 @@ async function init() {
       state = data;
       save();
       await refreshPhotoKeys();
+      if (serverMode) {
+        try {
+          await fetch('/api/data', {
+            method: 'PUT', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: state.settings, records: state.records })
+          });
+          var upKeys = await idb.keys();
+          for (var j = 0; j < upKeys.length; j++) {
+            var pb = await idb.get(upKeys[j]);
+            if (pb) await fetch('/api/photo?date=' + upKeys[j], { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'image/jpeg' }, body: pb });
+          }
+        } catch (e) { toast('本地数据已导入，云端同步稍后自动重试'); }
+      }
       renderToday(); renderCalendar(); renderStats(); renderPhotos(); renderMe();
       toast('✅ 备份导入成功');
     } catch (err) { toast('导入失败：' + err.message); }
@@ -941,17 +1174,40 @@ async function init() {
   // 清理
   $('#btn-clear-old-photos').addEventListener('click', async function () {
     var cutoff = dateKey(addDays(new Date(), -30));
-    var keys = await idb.keys();
-    var old = keys.filter(function (k) { return k < cutoff; });
+    var keySet = {};
+    (await idb.keys()).forEach(function (k) { keySet[k] = true; });
+    Object.keys(state.records).forEach(function (k) {
+      if (state.records[k].photoId) keySet[state.records[k].photoId] = true;
+    });
+    var old = Object.keys(keySet).filter(function (k) { return k < cutoff; });
     if (!old.length) { toast('没有 30 天前的照片'); return; }
     if (!confirm('将删除 ' + old.length + ' 张 30 天前的照片（打卡记录保留），确定？')) return;
-    for (var i = 0; i < old.length; i++) { await idb.del(old[i]); }
+    for (var i = 0; i < old.length; i++) {
+      await idb.del(old[i]);
+      delete urlCache[old[i]];
+      if (serverMode) {
+        fetch('/api/photo?date=' + old[i], { method: 'DELETE', credentials: 'same-origin' }).catch(function () {});
+      }
+    }
     await refreshPhotoKeys();
     toast('✅ 已清理 ' + old.length + ' 张旧照片');
   });
   $('#btn-clear-all').addEventListener('click', async function () {
     if (!confirm('确定清空全部打卡数据和照片？此操作不可恢复，请先备份！')) return;
     if (!confirm('再次确认：真的要清空全部数据吗？')) return;
+    var oldKeys = await idb.keys();
+    if (serverMode) {
+      try {
+        await fetch('/api/data', {
+          method: 'PUT', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: defaultState().settings, records: {} })
+        });
+        for (var i = 0; i < oldKeys.length; i++) {
+          await fetch('/api/photo?date=' + oldKeys[i], { method: 'DELETE', credentials: 'same-origin' });
+        }
+      } catch (e) { /* 云端清空失败不阻塞本地 */ }
+    }
     await idb.clear();
     localStorage.removeItem(STORE_KEY);
     state = defaultState();
@@ -961,7 +1217,7 @@ async function init() {
     toast('已清空全部数据');
   });
 
-  renderToday();
+  await initAuth();
 }
 
 if (document.readyState === 'loading') {

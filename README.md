@@ -1,14 +1,17 @@
 # 🏃 跑步打卡
 
-个人跑步打卡系统：**每日跑步打卡 + 体重记录 + 面容照片变化追踪**，微信内使用。
+多用户跑步打卡系统：**每日跑步打卡 + 体重记录 + 面容照片变化追踪**，微信内使用。
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+> 🆕 **v1.2 多用户版**：每人注册自己的账号，数据云端保存、互相不可见。详情见 [多用户架构说明](docs/多用户架构说明.md)。
 
 ## 项目组成
 
 | 目录 | 说明 |
 |---|---|
-| `h5/` | 打卡网页（纯前端，托管在 Cloudflare Pages：https://run-checkin.pages.dev） |
+| `h5/` | 打卡网页（前端 + Pages Functions 后端，托管在 Cloudflare Pages：https://run-checkin.pages.dev） |
+| `h5/functions/api/` | 后端 API（注册/登录/记录/照片，Cloudflare Pages Functions + D1） |
 | `miniprogram/` | 微信小程序（每日打卡提醒壳，基于云开发订阅消息） |
 | `docs/` | 设计文档与部署教程 |
 
@@ -24,13 +27,17 @@
 
 ## 技术栈
 
-- 网页：纯 HTML/CSS/JS + Chart.js + JSZip；数据本地存储（localStorage + IndexedDB），**无后端**
+- 网页：纯 HTML/CSS/JS + Chart.js + JSZip
+- 后端：Cloudflare Pages Functions（API）+ D1 数据库（多用户、密码 PBKDF2 哈希、会话 Cookie）
 - 小程序：原生小程序 + 云函数（定时订阅消息）
-- 托管：Cloudflare Pages（免费）
+- 托管：Cloudflare Pages（免费额度内）
 
-## 数据说明
+## 数据说明（多用户版）
 
-打卡数据保存在使用者的手机本地（微信内置浏览器存储），不上传任何服务器。请定期使用「我的 → 导出备份」备份到文件传输助手。
+- 每个用户注册独立账号，数据按账号隔离存储在 Cloudflare D1，**互相不可见**
+- 密码仅存 PBKDF2 哈希，登录会话 30 天有效
+- 仍建议定期使用「我的 → 导出备份」下载 zip 备份
+- 详细架构、接口与免费额度见 [多用户架构说明](docs/多用户架构说明.md)
 
 ## 界面预览
 
@@ -76,7 +83,14 @@ wrangler pages deploy h5 --project-name=run-checkin
 
 Cloudflare 后台 → **Workers 和 Pages** → run-checkin → **创建新部署 → 直接上传** → 拖入 `h5/` 目录里的文件 → 部署。
 
-> 💡 更新代码**不会影响**手机里的打卡数据（数据存在手机浏览器，与网址绑定）。
+> 💡 更新代码**不会影响**账号里的打卡数据（数据存在云端数据库，与网址和本机存储无关）。
+
+## 文档
+
+- [多用户架构说明](docs/多用户架构说明.md)
+- [设计方案](docs/跑步打卡H5设计方案.md)
+- [部署到微信手把手教程](docs/部署到微信·手把手教程.md)
+- [小程序部署指南](docs/小程序部署指南.md)
 
 ## License
 
