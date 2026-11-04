@@ -1,9 +1,5 @@
-# 自动部署 h5/ 目录到 Cloudflare Pages
-# 启用方法见 README「更新网站（自动化）」章节：
-#   1. 创建 Cloudflare API 令牌（Account → Cloudflare Pages → Edit）
-#   2. 仓库 Settings → Secrets and variables → Actions 添加：
-#        CLOUDFLARE_API_TOKEN  = 你的令牌
-#        CLOUDFLARE_ACCOUNT_ID = 8fb2505919addeb513ecea70b093beca
+# 自动部署 h5/ 目录到 Cloudflare Pages（含 Functions 后端）
+# 注意：必须进入 h5 目录后部署，确保 wrangler 识别 h5/functions 后端
 name: Deploy H5 to Cloudflare Pages
 
 on:
@@ -33,7 +29,8 @@ jobs:
         run: npm install -g wrangler
 
       - name: Deploy to Cloudflare Pages
+        working-directory: h5
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: wrangler pages deploy h5 --project-name=run-checkin --commit-dirty=true
+        run: wrangler pages deploy . --project-name=run-checkin --commit-dirty=true
